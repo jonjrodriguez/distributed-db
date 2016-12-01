@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using DistributedDb.Operations;
 using DistributedDb.Variables;
 
 namespace DistributedDb.Sites
@@ -25,5 +27,14 @@ namespace DistributedDb.Sites
         }
         
         public IList<Site> Sites { get; set; }
+
+        public void execute(IEnumerable<Operation> operations)
+        {
+            Console.WriteLine($"SiteManager: {operations.Count()} operations");
+            foreach (var operation in operations)
+            {
+                Console.WriteLine(operation.ToString());
+            }
+        }
     }
 }

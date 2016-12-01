@@ -68,7 +68,57 @@ namespace DistributedDb.Operations
 
         private Operation ParseOperation(string operation)
         {
-            return new Operation();
+            var parts = operation.Trim()
+                .Split(new char[]{ '(', ')' })
+                .Where(s => !string.IsNullOrEmpty(s.Trim()))
+                .ToArray();
+
+            var type = GetOperationType(parts[0]);
+
+            return new Operation { Type = type };
+        }
+
+        private OperationType GetOperationType(string operation)
+        {
+            OperationType type;
+            switch (operation.Trim().ToLower())
+            {
+                case "begin":
+                    type = OperationType.Begin;
+                    break;
+                case "beginro":
+                    type = OperationType.BeginRO;
+                    break;
+                case "r":
+                    type = OperationType.Read;
+                    break;
+                case "w":
+                    type = OperationType.Write;
+                    break;
+                case "dump":
+                    type = OperationType.Dump;
+                    break;
+                case "end":
+                    type = OperationType.End;
+                    break;
+                case "fail":
+                    type = OperationType.Fail;
+                    break;
+                case "recover":
+                    type = OperationType.Recover;
+                    break;
+                default:
+                    type = OperationType.Invalid;
+                    break;
+            }
+
+            if (type == OperationType.Invalid)
+            {
+                Console.WriteLine($"Operation '{operation}' is invalid.");
+                Environment.Exit(1);
+            }
+
+            return type;
         }
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using DistributedDb.Operations;
 
 namespace DistributedDb.Transactions
@@ -8,8 +9,9 @@ namespace DistributedDb.Transactions
     {
         public IList<Transaction> Transactions { get; set; }
 
-        public void execute(IList<Operation> operations)
+        public void execute(IEnumerable<Operation> operations)
         {
+            Console.WriteLine($"TransactionManager: {operations.Count()} operations");
             foreach (var operation in operations)
             {
                 Console.WriteLine(operation.ToString());

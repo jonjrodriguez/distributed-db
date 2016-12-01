@@ -3,6 +3,7 @@ using DistributedDb.Sites;
 using DistributedDb.Transactions;
 using DistributedDb.Operations;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace DistributedDb
 {
@@ -19,8 +20,11 @@ namespace DistributedDb
             List<Operation> operations;
             while ((operations = parser.GetInstruction()) != null)
             {
-                transactionManager.execute(operations);
-                Console.WriteLine(time);
+                Console.WriteLine($"Time: {time}");
+                siteManager.execute(operations.Where(op => Operation.SiteOperations.Contains(op.Type)));
+                transactionManager.execute(operations.Where(op => !Operation.SiteOperations.Contains(op.Type)));
+                Console.WriteLine();
+                
                 time++;
             }
 

@@ -2,6 +2,7 @@ namespace DistributedDb.Operations
 {
     public enum OperationType
     {
+        Invalid,
         Begin,
         BeginRO,
         Read,
@@ -14,7 +15,14 @@ namespace DistributedDb.Operations
 
     public class Operation
     {
-        public OperationType? Type { get; set; }
+        public static readonly OperationType[] SiteOperations =
+        {
+            OperationType.Dump,
+            OperationType.Fail,
+            OperationType.Recover
+        };
+
+        public OperationType Type { get; set; }
 
         public string Transaction { get; set; }
 
