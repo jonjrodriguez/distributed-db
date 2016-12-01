@@ -69,56 +69,152 @@ namespace DistributedDb.Operations
         private Operation ParseOperation(string operation)
         {
             var parts = operation.Trim()
-                .Split(new char[]{ '(', ')' })
+                .Split(new[] { '(', ')' })
                 .Where(s => !string.IsNullOrEmpty(s.Trim()))
                 .ToArray();
 
-            var type = GetOperationType(parts[0]);
+            try
+            {
+                var type = GetOperationType(parts[0]);
 
-            return new Operation { Type = type };
+                var info = parts.Length > 1 ? parts[1].Trim()
+                    .Split(',')
+                    .Where(s => !string.IsNullOrEmpty(s.Trim()))
+                    .ToArray() : new string[0];
+
+                if (type != OperationType.Dump && info.Length < 1)
+                {
+                    throw new System.FormatException("Operation contains no data.");
+                }
+
+                var transaction = info.Length > 0 ? GetTransaction(info, type) :  "";
+                var site = info.Length > 0 ? GetSite(info, type) : null;
+                var variable = info.Length > 0 ? GetVariable(info, type) : "";
+                var writeValue = info.Length > 0 ? GetWriteValue(info, type) : null;
+
+                return new Operation
+                { 
+                    Type = type,
+                    Transaction = transaction,
+                    Site = site,
+                    Variable = variable,
+                    WriteValue = writeValue
+                };
+            }
+            catch (System.FormatException e)
+            {
+                Console.WriteLine($"Operation '{operation}' is invalid. {e.Message}");
+                Environment.Exit(1);
+                return null;
+            }
         }
 
         private OperationType GetOperationType(string operation)
         {
-            OperationType type;
             switch (operation.Trim().ToLower())
             {
                 case "begin":
-                    type = OperationType.Begin;
-                    break;
+                    return OperationType.Begin;
                 case "beginro":
-                    type = OperationType.BeginRO;
-                    break;
+                    return OperationType.BeginRO;
                 case "r":
-                    type = OperationType.Read;
-                    break;
+                    return OperationType.Read;
                 case "w":
-                    type = OperationType.Write;
-                    break;
+                    return OperationType.Write;
                 case "dump":
-                    type = OperationType.Dump;
-                    break;
+                    return OperationType.Dump;
                 case "end":
-                    type = OperationType.End;
-                    break;
+                    return OperationType.End;
                 case "fail":
-                    type = OperationType.Fail;
-                    break;
+                    return OperationType.Fail;
                 case "recover":
-                    type = OperationType.Recover;
-                    break;
+                    return OperationType.Recover;
                 default:
-                    type = OperationType.Invalid;
-                    break;
+                    throw new System.FormatException("The operation is not supported");
             }
+        }
 
-            if (type == OperationType.Invalid)
+        public string GetTransaction(string[] info, OperationType type)
+        {
+            switch (type)
             {
-                Console.WriteLine($"Operation '{operation}' is invalid.");
-                Environment.Exit(1);
+                case OperationType.Begin:
+                case OperationType.BeginRO:
+                case OperationType.Read:
+                case OperationType.Write:
+                case OperationType.End:
+                    return info[0].Trim();
+                case OperationType.Dump:
+                case OperationType.Fail:
+                case OperationType.Recover:
+                default:
+                    return "";
+            }
+        }
+
+        public int? GetSite(string[] info, OperationType type)
+        {
+            int site;
+            if (type == OperationType.Dump)
+            {
+                if (int.TryParse(info[0], out site))
+                {
+                    if (site <= 10 && site >= 1)
+                    {
+                        return site;
+                    }
+
+                    throw new System.FormatException("The input needs to be a valid site.");
+                }
             }
 
-            return type;
+            if (type == OperationType.Fail || type == OperationType.Recover)
+            {
+                if (int.TryParse(info[0], out site) && site <= 10 && site >= 1)
+                {
+                    return site;
+                }
+                
+                throw new System.FormatException("The input needs to be a valid site.");
+            }
+
+            return null;
+        }
+
+        public string GetVariable(string[] info, OperationType type)
+        {
+            if (type == OperationType.Dump)
+            {
+                int site;
+                return int.TryParse(info[0], out site) ? "" : info[0].Trim(); 
+            }
+
+            if (type == OperationType.Read || type == OperationType.Write)
+            {
+                if (info.Length < 2)
+                {
+                    throw new System.FormatException("Operation doesn't have variable information");
+                }
+
+                return info[1].Trim();
+            }
+            
+            return "";
+        }
+
+        public int? GetWriteValue(string[] info, OperationType type)
+        {
+            if (type != OperationType.Write)
+            {
+                return null;
+            }
+
+            if (info.Length < 3)
+            {
+                throw new System.FormatException("Write operation does not contain value to write.");
+            }
+
+            return int.Parse(info[2]);
         }
     }
 }

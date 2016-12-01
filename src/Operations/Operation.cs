@@ -2,7 +2,6 @@ namespace DistributedDb.Operations
 {
     public enum OperationType
     {
-        Invalid,
         Begin,
         BeginRO,
         Read,
