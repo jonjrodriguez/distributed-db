@@ -9,7 +9,7 @@ namespace DistributedDb.Transactions
     {
         public IList<Transaction> Transactions { get; set; }
 
-        public void execute(IEnumerable<Operation> operations)
+        public void Execute(IEnumerable<Operation> operations)
         {
             Console.WriteLine($"TransactionManager: {operations.Count()} operations");
             foreach (var operation in operations)

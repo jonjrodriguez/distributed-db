@@ -186,7 +186,7 @@ namespace DistributedDb.Operations
             if (type == OperationType.Dump)
             {
                 int site;
-                return int.TryParse(info[0], out site) ? "" : info[0].Trim(); 
+                return int.TryParse(info[0], out site) ? "" : GetValidVariable(info[0]); 
             }
 
             if (type == OperationType.Read || type == OperationType.Write)
@@ -196,10 +196,28 @@ namespace DistributedDb.Operations
                     throw new System.FormatException("Operation doesn't have variable information");
                 }
 
-                return info[1].Trim();
+                return GetValidVariable(info[1]);
             }
             
             return "";
+        }
+
+        public string GetValidVariable(string variable)
+        {
+            variable = variable.Trim().ToLower();
+
+            if (!variable.StartsWith("x"))
+            {
+                throw new System.FormatException("The input needs to be a valid variable.");
+            }
+
+            int id;
+            if (!int.TryParse(variable.Substring(1), out id) || id > 20 || id < 1)
+            {
+                throw new System.FormatException("The input needs to be a valid variable.");
+            }
+
+            return variable;
         }
 
         public int? GetWriteValue(string[] info, OperationType type)

@@ -28,12 +28,31 @@ namespace DistributedDb.Sites
         
         public IList<Site> Sites { get; set; }
 
-        public void execute(IEnumerable<Operation> operations)
+        public void Execute(IEnumerable<Operation> operations)
         {
             Console.WriteLine($"SiteManager: {operations.Count()} operations");
             foreach (var operation in operations)
             {
-                Console.WriteLine(operation.ToString());
+                switch (operation.Type)
+                {
+                    case OperationType.Dump:
+                        Dump(operation.Site, operation.Variable);
+                        break;
+                    default:
+                        Console.WriteLine(operation.ToString());
+                        break;
+                }
+            }
+        }
+
+        public void Dump(int? siteId, string variable)
+        {
+            var sites = siteId == null ? Sites : Sites.Where(s => s.Id == siteId);
+            sites = string.IsNullOrWhiteSpace(variable) ? sites : sites.Where(s => s.Data.Any(d => d.Name == variable));
+
+            foreach (var site in sites)
+            {
+                Console.WriteLine(site.ToString(variable));
             }
         }
     }

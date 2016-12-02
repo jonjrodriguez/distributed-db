@@ -21,8 +21,8 @@ namespace DistributedDb
             while ((operations = parser.GetInstruction()) != null)
             {
                 Console.WriteLine($"Time: {time}");
-                siteManager.execute(operations.Where(op => Operation.SiteOperations.Contains(op.Type)));
-                transactionManager.execute(operations.Where(op => !Operation.SiteOperations.Contains(op.Type)));
+                siteManager.Execute(operations.Where(op => Operation.SiteOperations.Contains(op.Type)));
+                transactionManager.Execute(operations.Where(op => !Operation.SiteOperations.Contains(op.Type)));
                 Console.WriteLine();
                 
                 time++;

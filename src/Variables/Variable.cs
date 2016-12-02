@@ -14,5 +14,7 @@ namespace DistributedDb.Variables
         public string Name { get; set; }
 
         public int Value { get; set; }
+
+        public bool IsReplicated => Id % 2 == 0;
     }
 }
