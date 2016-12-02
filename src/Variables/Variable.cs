@@ -16,5 +16,10 @@ namespace DistributedDb.Variables
         public int Value { get; set; }
 
         public bool IsReplicated => Id % 2 == 0;
+
+        public override string ToString()
+        {
+            return $"{Name}:{Value}";
+        }
     }
 }

@@ -30,7 +30,6 @@ namespace DistributedDb.Sites
 
         public void Execute(IEnumerable<Operation> operations)
         {
-            Console.WriteLine($"SiteManager: {operations.Count()} operations");
             foreach (var operation in operations)
             {
                 switch (operation.Type)
@@ -48,12 +47,17 @@ namespace DistributedDb.Sites
         public void Dump(int? siteId, string variable)
         {
             var sites = siteId == null ? Sites : Sites.Where(s => s.Id == siteId);
-            sites = string.IsNullOrWhiteSpace(variable) ? sites : sites.Where(s => s.Data.Any(d => d.Name == variable));
+            sites = string.IsNullOrWhiteSpace(variable) ? sites : SitesWithVariable(variable);
 
             foreach (var site in sites)
             {
                 Console.WriteLine(site.ToString(variable));
             }
+        }
+
+        public List<Site> SitesWithVariable(string variable)
+        {
+            return Sites.Where(s => s.Data.Any(d => d.Name == variable)).ToList();
         }
     }
 }

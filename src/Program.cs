@@ -13,7 +13,7 @@ namespace DistributedDb
         {
             var time = 1;
             var siteManager = new SiteManager();
-            var transactionManager = new TransactionManager();
+            var transactionManager = new TransactionManager(siteManager);
 
             var parser = new InputParser(args);
 
