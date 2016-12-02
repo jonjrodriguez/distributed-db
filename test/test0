@@ -1,3 +1,6 @@
 begin(T1)
-beginRO(T3)
-r(T1, x2)
+begin(T2)
+r(T1, x2); r(T2, x2)
+w(T1, x2, 100)
+r(T1, x2); r(T2, x2)
+dump(x2)

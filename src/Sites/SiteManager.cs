@@ -20,6 +20,7 @@ namespace DistributedDb.Sites
             {
                 var data = variables
                     .Where(variable => variable.Id % 2 == 0 || i == 1 + variable.Id % 10)
+                    .Select(variable => new Variable(variable.Id))
                     .ToList();
 
                 Sites.Add(new Site(i, data));    
@@ -51,13 +52,25 @@ namespace DistributedDb.Sites
 
             foreach (var site in sites)
             {
-                Console.WriteLine(site.ToString(variable));
+                Console.WriteLine(site.Dump(variable));
             }
         }
 
-        public List<Site> SitesWithVariable(string variable)
+        public List<Site> SitesWithVariable(string variable, SiteState? state = null)
         {
-            return Sites.Where(s => s.Data.Any(d => d.Name == variable)).ToList();
+            var sites = Sites.Where(s => s.Data.Any(d => d.Name == variable));
+
+            if (state != null)
+            {
+                sites = sites.Where(s => s.State == state);
+            }
+
+            return sites.ToList();
+        }
+
+        public List<Variable> Snapshot()
+        {
+            return new List<Variable>();
         }
     }
 }

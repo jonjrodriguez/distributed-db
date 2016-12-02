@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DistributedDb.Operations;
 using DistributedDb.Sites;
+using DistributedDb.Variables;
 
 namespace DistributedDb.Transactions
 {
@@ -33,6 +34,9 @@ namespace DistributedDb.Transactions
                     case OperationType.Read:
                         ReadVariable(operation.Transaction, operation.Variable);
                         break;
+                    case OperationType.Write:
+                        WriteVariable(operation.Transaction, operation.Variable, (int) operation.WriteValue);
+                        break;
                     default:
                         Console.WriteLine(operation.ToString());
                         break;
@@ -54,10 +58,64 @@ namespace DistributedDb.Transactions
                 IsReadOnly = readOnly
             };
 
+            if (readOnly)
+            {
+                transaction.LocalData = SiteManager.Snapshot();
+            }
+
             Transactions.Add(transaction);
         }
 
         public void ReadVariable(string transactionName, string variableName)
+        {
+            var transaction = GetTransaction(transactionName);
+
+            var variable = transaction.ReadFromLocal(variableName);
+
+            if (variable != null)
+            {
+                Console.WriteLine($"{transaction.ToString()} reads {variable.ToString()}");
+                return;
+            }
+
+            var stableSites = SiteManager.SitesWithVariable(variableName, SiteState.Stable);
+            foreach (var site in stableSites)
+            {
+                if (site.GetReadLock(transaction, variableName))
+                {
+                    variable = site.ReadData(variableName);
+                    Console.WriteLine($"{transaction.ToString()} reads {variable.ToString()}");
+                    return;
+                }
+            }
+        }
+
+        public void WriteVariable(string transactionName, string variableName, int value)
+        {
+            var transaction = GetTransaction(transactionName);
+
+            var lockedAllSites = true;
+            var stableSites = SiteManager.SitesWithVariable(variableName, SiteState.Stable);
+            foreach (var site in stableSites)
+            {
+                if (!site.GetWriteLock(transaction, variableName))
+                {
+                    lockedAllSites = false;
+                }
+            }
+
+            if (lockedAllSites)
+            {
+                var variable = new Variable { Name = variableName, Value = value };
+                transaction.LocalData.Add(variable);
+                foreach (var site in stableSites)
+                {
+                    site.WriteData(variable);
+                }
+            }
+        }
+
+        private Transaction GetTransaction(string transactionName)
         {
             var transaction = Transactions.FirstOrDefault(t => t.Name == transactionName);
 
@@ -67,18 +125,7 @@ namespace DistributedDb.Transactions
                 Environment.Exit(1);
             }
 
-            var sites = SiteManager.SitesWithVariable(variableName);
-            foreach (var site in sites)
-            {
-                if (site.GetReadLock(transaction, variableName))
-                {
-                    var variable = site.ReadData(variableName);
-                    Console.WriteLine($"{transactionName} reads " + variable.ToString() + $" from Site {site.Id}");
-                    return;
-                }
-            }
-
-            Console.WriteLine(transaction.ToString());
+            return transaction;
         }
     }
 }
