@@ -5,21 +5,16 @@ using DistributedDb.Variables;
 namespace DistributedDb.Transactions
 {
     public class Transaction
-    {
-        public Transaction()
-        {
-            LocalData = new List<Variable>();
-        }
-        
+    {   
         public string Name { get; set; }
 
         public bool IsReadOnly { get; set; }
 
-        public IList<Variable> LocalData { get; set; }
+        public IList<Variable> SnapShot { get; set; }
 
-        public Variable ReadFromLocal(string variableName)
+        public Variable ReadFromSnapShot(string variableName)
         {
-            return LocalData.FirstOrDefault(v => v.Name == variableName);
+            return SnapShot.FirstOrDefault(v => v.Name == variableName);
         }
 
         public override string ToString()

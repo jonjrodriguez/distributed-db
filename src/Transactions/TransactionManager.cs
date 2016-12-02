@@ -60,7 +60,7 @@ namespace DistributedDb.Transactions
 
             if (readOnly)
             {
-                transaction.LocalData = SiteManager.Snapshot();
+                transaction.SnapShot = SiteManager.Snapshot();
             }
 
             Transactions.Add(transaction);
@@ -70,10 +70,9 @@ namespace DistributedDb.Transactions
         {
             var transaction = GetTransaction(transactionName);
 
-            var variable = transaction.ReadFromLocal(variableName);
-
-            if (variable != null)
+            if (transaction.IsReadOnly)
             {
+                var variable = transaction.ReadFromSnapShot(variableName);
                 Console.WriteLine($"{transaction.ToString()} reads {variable.ToString()}");
                 return;
             }
@@ -83,7 +82,7 @@ namespace DistributedDb.Transactions
             {
                 if (site.GetReadLock(transaction, variableName))
                 {
-                    variable = site.ReadData(variableName);
+                    var variable = site.ReadData(transaction, variableName);
                     Console.WriteLine($"{transaction.ToString()} reads {variable.ToString()}");
                     return;
                 }
@@ -106,11 +105,9 @@ namespace DistributedDb.Transactions
 
             if (lockedAllSites)
             {
-                var variable = new Variable { Name = variableName, Value = value };
-                transaction.LocalData.Add(variable);
                 foreach (var site in stableSites)
                 {
-                    site.WriteData(variable);
+                    site.WriteData(variableName, value);
                 }
             }
         }

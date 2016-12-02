@@ -32,28 +32,37 @@ namespace DistributedDb.Sites
 
         public SiteState State { get; set; }
 
-        public bool GetReadLock(Transaction transaction, string variable)
-        {
-            return true;
-        }
-
-        public bool GetWriteLock(Transaction transaction, string variable)
-        {
-            return true;
-        }
-
-        public Variable ReadData(string variableName)
+        public bool GetReadLock(Transaction transaction, string variableName)
         {
             var variable = GetVariable(variableName);
 
-            return variable;
+            return LockManager.GetReadLock(transaction, variable);
         }
 
-        public void WriteData(Variable newVariable)
+        public bool GetWriteLock(Transaction transaction, string variableName)
         {
-            var variable = GetVariable(newVariable.Name);
+            var variable = GetVariable(variableName);
+            
+            return LockManager.GetWriteLock(transaction, variable);
+        }
 
-            variable.UpdatedValue = newVariable.Value;
+        public int ReadData(Transaction transaction, string variableName)
+        {
+            var variable = GetVariable(variableName);
+
+            if (LockManager.HasWriteLock(transaction, variable))
+            {
+                return variable.UpdatedValue;
+            }
+
+            return variable.Value;
+        }
+
+        public void WriteData(string variableName, int value)
+        {
+            var variable = GetVariable(variableName);
+
+            variable.UpdatedValue = value;
         }
 
         private Variable GetVariable(string variableName)
