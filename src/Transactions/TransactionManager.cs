@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using DistributedDb.Operations;
 using DistributedDb.Sites;
-using DistributedDb.Variables;
 
 namespace DistributedDb.Transactions
 {
@@ -87,6 +86,14 @@ namespace DistributedDb.Transactions
                     return;
                 }
             }
+
+            transaction.State = TransactionState.Waiting;
+            transaction.OperationBuffer = new Operation
+            {
+                Type = OperationType.Read,
+                Transaction = transactionName,
+                Variable = variableName
+            };
         }
 
         public void WriteVariable(string transactionName, string variableName, int value)
@@ -109,7 +116,18 @@ namespace DistributedDb.Transactions
                 {
                     site.WriteData(variableName, value);
                 }
+
+                return;
             }
+            
+            transaction.State = TransactionState.Waiting;
+            transaction.OperationBuffer = new Operation
+            {
+                Type = OperationType.Write,
+                Transaction = transactionName,
+                Variable = variableName,
+                WriteValue = value
+            };
         }
 
         private Transaction GetTransaction(string transactionName)
@@ -119,6 +137,12 @@ namespace DistributedDb.Transactions
             if (transaction == null)
             {
                 Console.WriteLine($"Trying to read as transaction {transactionName}, but it doesn't exist.");
+                Environment.Exit(1);
+            }
+
+            if (transaction.OperationBuffer != null)
+            {
+                Console.WriteLine($"Transaction {transactionName} received another operation while it is {transaction.State}.");
                 Environment.Exit(1);
             }
 
