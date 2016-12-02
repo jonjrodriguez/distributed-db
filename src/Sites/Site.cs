@@ -58,6 +58,11 @@ namespace DistributedDb.Sites
             return variable.Value;
         }
 
+        public int ReadData(Variable variable)
+        {
+            return GetVariable(variable.Name).Value;
+        }
+
         public void WriteData(string variableName, int value)
         {
             var variable = GetVariable(variableName);

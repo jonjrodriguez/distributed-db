@@ -70,7 +70,25 @@ namespace DistributedDb.Sites
 
         public List<Variable> Snapshot()
         {
-            return new List<Variable>();
+            var variables = new List<Variable>();
+            for (int i = 1; i <= 20; i++) {
+                var variable = new Variable(i);
+                SetCommittedValue(variable);
+                variables.Add(variable);
+            }
+
+            return variables;
+        }
+
+        public void SetCommittedValue(Variable variable)
+        {
+            var stableSites = SitesWithVariable(variable.Name, SiteState.Stable);
+            foreach (var site in stableSites)
+            {
+                // check variable is valid in case site is recovering
+                variable.Value = site.ReadData(variable);
+                return;
+            }
         }
     }
 }

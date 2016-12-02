@@ -1,6 +1,6 @@
 begin(T1)
-begin(T2)
+beginRO(T2)
 w(T1, x1, 100)
 r(T1, x1); r(T2, x1)
-r(T1, x1);
+r(T1, x1); r(T2, x1)
 dump(x1)
