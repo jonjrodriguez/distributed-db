@@ -10,7 +10,6 @@ namespace DistributedDb.Sites
     public enum SiteState
     {
         Stable,
-        Recovering,
         Fail
     }
 
@@ -22,6 +21,7 @@ namespace DistributedDb.Sites
             Data = data;
             LockManager = new LockManager();
             State = SiteState.Stable;
+            UpSince = 0;
         }
         
         public int Id { get; set; }
@@ -31,6 +31,8 @@ namespace DistributedDb.Sites
         public LockManager LockManager { get; set; }
 
         public SiteState State { get; set; }
+
+        public int UpSince { get; set; }
 
         public bool GetReadLock(Transaction transaction, string variableName)
         {
@@ -50,24 +52,24 @@ namespace DistributedDb.Sites
         {
             var variable = GetVariable(variableName);
 
-            if (LockManager.HasWriteLock(transaction, variable))
+            if (transaction.IsReadOnly)
             {
-                return variable.UpdatedValue;
+                return variable.ValueAtTime(transaction.StartTime);
             }
 
-            return variable.Value;
-        }
+            if (LockManager.HasWriteLock(transaction, variable))
+            {
+                return variable.NewValue;
+            }
 
-        public int ReadData(Variable variable)
-        {
-            return GetVariable(variable.Name).Value;
+            return variable.LatestValue();
         }
 
         public void WriteData(string variableName, int value)
         {
             var variable = GetVariable(variableName);
 
-            variable.UpdatedValue = value;
+            variable.NewValue = value;
         }
 
         private Variable GetVariable(string variableName)

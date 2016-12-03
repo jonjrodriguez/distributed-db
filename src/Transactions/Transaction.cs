@@ -13,14 +13,14 @@ namespace DistributedDb.Transactions
         Committed,
         Aborted
     }
-    
+
     public class Transaction
     {   
         public Transaction()
         {
             State = TransactionState.Running;
             OperationBuffer = null;
-            SnapShot = new List<Variable>();
+            WaitTime = 0;
         }
 
         public string Name { get; set; }
@@ -29,14 +29,11 @@ namespace DistributedDb.Transactions
 
         public bool IsReadOnly { get; set; }
 
+        public int StartTime { get; set; }
+
         public Operation OperationBuffer { get; set; }
 
-        public IList<Variable> SnapShot { get; set; }
-
-        public Variable ReadFromSnapShot(string variableName)
-        {
-            return SnapShot.FirstOrDefault(v => v.Name == variableName);
-        }
+        public int WaitTime { get; set; }
 
         public override string ToString()
         {

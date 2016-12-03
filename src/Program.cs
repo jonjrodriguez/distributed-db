@@ -11,21 +11,20 @@ namespace DistributedDb
     {
         public static void Main(string[] args)
         {
-            var time = 1;
-            var siteManager = new SiteManager();
-            var transactionManager = new TransactionManager(siteManager);
+            var clock = new Clock();
+            var siteManager = new SiteManager(clock);
+            var transactionManager = new TransactionManager(clock, siteManager);
 
             var parser = new InputParser(args);
 
             List<Operation> operations;
             while ((operations = parser.GetInstruction()) != null)
             {
-                Console.WriteLine($"Time: {time}");
+                clock.Tick();
+                Console.WriteLine(clock.ToString());
                 siteManager.Execute(operations.Where(op => Operation.SiteOperations.Contains(op.Type)));
                 transactionManager.Execute(operations.Where(op => !Operation.SiteOperations.Contains(op.Type)));
                 Console.WriteLine();
-                
-                time++;
             }
 
             Console.WriteLine("Jobs Done.");

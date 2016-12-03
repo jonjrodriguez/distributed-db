@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+
 namespace DistributedDb.Variables
 {
     public class Variable
@@ -6,27 +9,42 @@ namespace DistributedDb.Variables
         {
         }
 
-        public Variable(int id)
+        public Variable(int id, int time)
         {
             Id = id;
             Name = "x" + id;
-            Value = id * 10;
             IsReplicated = id % 2 == 0;
+            History = new Dictionary<int, int>();
+            History.Add(time, id * 10);
         }
 
         public int Id { get; set; }
 
         public string Name { get; set; }
 
-        public int Value { get; set; }
+        public Dictionary<int, int> History { get; set; }
 
-        public int UpdatedValue { get; set; }
+        public int NewValue { get; set; }
 
         public bool IsReplicated { get; set; }
 
+        public int LatestValue()
+        {
+            return History.OrderByDescending(h => h.Key)
+                .First()
+                .Value;
+        }
+
+        public int ValueAtTime(int time)
+        {
+            return History.OrderByDescending(h => h.Key)
+                .First(h => h.Key <= time)
+                .Value;
+        }
+
         public override string ToString()
         {
-            return $"{Name}={Value}";
+            return $"{Name}={LatestValue()}";
         }
     }
 }

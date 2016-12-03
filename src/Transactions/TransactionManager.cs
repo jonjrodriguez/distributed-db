@@ -8,11 +8,14 @@ namespace DistributedDb.Transactions
 {
     public class TransactionManager
     {
-        public TransactionManager(SiteManager manager)
+        public TransactionManager(Clock clock, SiteManager manager)
         {
+            Clock = clock;
             Transactions = new List<Transaction>();
             SiteManager = manager;
         }
+
+        public Clock Clock { get; set; }
 
         public IList<Transaction> Transactions { get; set; }
 
@@ -54,13 +57,9 @@ namespace DistributedDb.Transactions
             var transaction = new Transaction
             {
                 Name = transactionName,
-                IsReadOnly = readOnly
+                IsReadOnly = readOnly,
+                StartTime = Clock.Time
             };
-
-            if (readOnly)
-            {
-                transaction.SnapShot = SiteManager.Snapshot();
-            }
 
             Transactions.Add(transaction);
         }
@@ -69,17 +68,10 @@ namespace DistributedDb.Transactions
         {
             var transaction = GetTransaction(transactionName);
 
-            if (transaction.IsReadOnly)
-            {
-                var variable = transaction.ReadFromSnapShot(variableName);
-                Console.WriteLine($"{transaction.ToString()} reads {variable.ToString()}");
-                return;
-            }
-
             var stableSites = SiteManager.SitesWithVariable(variableName, SiteState.Stable);
             foreach (var site in stableSites)
             {
-                if (site.GetReadLock(transaction, variableName))
+                if (transaction.IsReadOnly || site.GetReadLock(transaction, variableName))
                 {
                     var variable = site.ReadData(transaction, variableName);
                     Console.WriteLine($"{transaction.ToString()} reads {variable.ToString()}");

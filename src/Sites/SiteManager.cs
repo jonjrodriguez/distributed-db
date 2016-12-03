@@ -8,11 +8,13 @@ namespace DistributedDb.Sites
 {
     public class SiteManager
     {
-        public SiteManager()
+        public SiteManager(Clock clock)
         {
+            Clock = clock;
+
             var variables = new List<Variable>();
             for (int i = 1; i <= 20; i++) {
-                variables.Add(new Variable(i));
+                variables.Add(new Variable(i, clock.Time));
             }
 
             Sites = new List<Site>();
@@ -20,12 +22,14 @@ namespace DistributedDb.Sites
             {
                 var data = variables
                     .Where(variable => variable.Id % 2 == 0 || i == 1 + variable.Id % 10)
-                    .Select(variable => new Variable(variable.Id))
+                    .Select(variable => new Variable(variable.Id, clock.Time))
                     .ToList();
 
                 Sites.Add(new Site(i, data));    
             }
         }
+
+        public Clock Clock { get; set; }
         
         public IList<Site> Sites { get; set; }
 
@@ -66,29 +70,6 @@ namespace DistributedDb.Sites
             }
 
             return sites.ToList();
-        }
-
-        public List<Variable> Snapshot()
-        {
-            var variables = new List<Variable>();
-            for (int i = 1; i <= 20; i++) {
-                var variable = new Variable(i);
-                SetCommittedValue(variable);
-                variables.Add(variable);
-            }
-
-            return variables;
-        }
-
-        public void SetCommittedValue(Variable variable)
-        {
-            var stableSites = SitesWithVariable(variable.Name, SiteState.Stable);
-            foreach (var site in stableSites)
-            {
-                // check variable is valid in case site is recovering
-                variable.Value = site.ReadData(variable);
-                return;
-            }
         }
     }
 }
