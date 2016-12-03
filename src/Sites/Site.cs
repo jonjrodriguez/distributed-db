@@ -38,6 +38,11 @@ namespace DistributedDb.Sites
         {
             var variable = GetVariable(variableName);
 
+            if (!variable.Readable)
+            {
+                return false;
+            }
+
             return LockManager.GetReadLock(transaction, variable);
         }
 
@@ -80,6 +85,7 @@ namespace DistributedDb.Sites
             {
                 variable.History.Add(transaction.EndTime, variable.NewValue);
                 variable.NewValue = 0;
+                variable.Readable = true;
             }
         }
 
@@ -105,6 +111,11 @@ namespace DistributedDb.Sites
         {
             State = SiteState.Fail;
             LockManager = new LockManager();
+
+            foreach (var variable in Data.Where(v => v.IsReplicated))
+            {
+                variable.Readable = false;
+            }
         }
 
         public void Recover(int time)
@@ -115,14 +126,14 @@ namespace DistributedDb.Sites
 
         public override string ToString()
         {
-            return $"Site {Id} ({State})";
+            return $"Site {Id}";
         }
 
         public string Dump(string variableName)
         {
             var data = string.IsNullOrWhiteSpace(variableName) ? Data : Data.Where(d => d.Name == variableName);
             
-            var result = $"{ToString()}:\n";
+            var result = $"{ToString()}: ({State})\n";
             foreach (var variable in data)
             {
                 result += variable.ToString() + " ";

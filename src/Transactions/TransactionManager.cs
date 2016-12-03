@@ -84,7 +84,7 @@ namespace DistributedDb.Transactions
                 {
                     var variable = site.ReadData(transaction, variableName);
                     transaction.AddSite(site, Clock.Time);
-                    Console.WriteLine($"{transaction.ToString()} reads {variable.ToString()}");
+                    Console.WriteLine($"{transaction.ToString()} reads {variable.ToString()} from {site.ToString()}");
                     return;
                 }
             }

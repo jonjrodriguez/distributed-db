@@ -14,6 +14,7 @@ namespace DistributedDb.Variables
             Id = id;
             Name = "x" + id;
             IsReplicated = id % 2 == 0;
+            Readable = true;
             History = new Dictionary<int, int>();
             History.Add(time, id * 10);
         }
@@ -27,6 +28,8 @@ namespace DistributedDb.Variables
         public int NewValue { get; set; }
 
         public bool IsReplicated { get; set; }
+
+        public bool Readable { get; set; }
 
         public int LatestValue()
         {

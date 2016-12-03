@@ -12,7 +12,7 @@ namespace DistributedDb.Locks
             Locks = new List<Lock>();
         }
 
-        private IList<Lock> Locks { get; set; }
+        private List<Lock> Locks { get; set; }
 
         public bool GetReadLock(Transaction transaction, Variable variable)
         {
@@ -73,15 +73,14 @@ namespace DistributedDb.Locks
 
         public IList<Variable> GetWriteLockedData(Transaction transaction)
         {
-            var locks = Locks.Where(l => l.Transaction == transaction);
+            var locks = Locks.Where(l => l.Transaction == transaction && l.Type == LockType.Write);
 
             return locks.Select(l => l.Variable).ToList();
         }
 
         public void ClearLocks(Transaction transaction)
         {
-            Locks.ToList()
-                .RemoveAll(l => l.Transaction == transaction);
+            Locks.RemoveAll(l => l.Transaction == transaction);
         }
     }
 }
