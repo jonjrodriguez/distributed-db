@@ -101,9 +101,9 @@ namespace DistributedDb.Transactions
             {
                 if (transaction.IsReadOnly || site.GetReadLock(transaction, variableName))
                 {
-                    var variable = site.ReadData(transaction, variableName);
+                    var value = site.ReadData(transaction, variableName);
                     transaction.AddSite(site, Clock.Time);
-                    Console.WriteLine($"{transaction.ToString()} reads {variable.ToString()} from {site.ToString()}");
+                    Console.WriteLine($"{transaction.ToString()} reads {variableName}={value} from {site.ToString()}");
                     transaction.ClearBuffer();
                     return;
                 }
@@ -133,19 +133,16 @@ namespace DistributedDb.Transactions
                 {
                     lockedAllSites = false;
                 }
-                else
-                {
-                    transaction.AddSite(site, Clock.Time);
-                }
             }
 
             if (lockedAllSites)
             {
-                Console.WriteLine($"{transaction.ToString()} writes {newValue} to {variableName} as {stableSites.Count()} sites.");
+                Console.WriteLine($"{transaction.ToString()} writes {variableName}={newValue} at {stableSites.Count()} sites");
                 transaction.ClearBuffer();
                 foreach (var site in stableSites)
                 {
                     site.WriteData(variableName, newValue);
+                    transaction.AddSite(site, Clock.Time);
                 }
             }
             else
