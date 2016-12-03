@@ -14,7 +14,9 @@
 * Abort Youngest in Cycle
 
 __Two ways to run:__
-portable: `dotnet run -p src <filename>`
+
+portable: `dotnet run -p src <file>`
+
 standalone: 
 
 1. File Based: provide a path to a file
