@@ -28,7 +28,7 @@ namespace DistributedDb.Sites
 
         public IList<Variable> Data { get; set; }
 
-        public LockManager LockManager { get; set; }
+        private LockManager LockManager { get; set; }
 
         public SiteState State { get; set; }
 
@@ -72,6 +72,22 @@ namespace DistributedDb.Sites
             variable.NewValue = value;
         }
 
+        public void CommitValue(Transaction transaction)
+        {
+            var variables = LockManager.GetWriteLockedData(transaction);
+
+            foreach (var variable in variables)
+            {
+                variable.History.Add(transaction.EndTime, variable.NewValue);
+                variable.NewValue = 0;
+            }
+        }
+
+        public void ClearLocks(Transaction transaction)
+        {
+            LockManager.ClearLocks(transaction);
+        }
+
         private Variable GetVariable(string variableName)
         {
             var variable = Data.FirstOrDefault(v => v.Name == variableName);
@@ -87,7 +103,7 @@ namespace DistributedDb.Sites
 
         public override string ToString()
         {
-            return $"Site {Id}";
+            return $"Site {Id} ({State})";
         }
 
         public string Dump(string variableName)

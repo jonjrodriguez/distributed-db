@@ -25,24 +25,33 @@ namespace DistributedDb.Transactions
         {
             foreach (var operation in operations)
             {
-                switch (operation.Type)
-                {
-                    case OperationType.Begin:
-                        BeginTransaction(operation.Transaction);
-                        break;
-                    case OperationType.BeginRO:
-                        BeginTransaction(operation.Transaction, true);
-                        break;
-                    case OperationType.Read:
-                        ReadVariable(operation.Transaction, operation.Variable);
-                        break;
-                    case OperationType.Write:
-                        WriteVariable(operation.Transaction, operation.Variable, (int) operation.WriteValue);
-                        break;
-                    default:
-                        Console.WriteLine(operation.ToString());
-                        break;
-                }
+                RunOperation(operation);
+            }
+        }
+
+        public void RunOperation(Operation operation)
+        {
+            switch (operation.Type)
+            {
+                case OperationType.Begin:
+                    BeginTransaction(operation.Transaction);
+                    break;
+                case OperationType.BeginRO:
+                    BeginTransaction(operation.Transaction, true);
+                    break;
+                case OperationType.Read:
+                    ReadVariable(operation.Transaction, operation.Variable);
+                    break;
+                case OperationType.Write:
+                    WriteVariable(operation.Transaction, operation.Variable, (int) operation.WriteValue);
+                    break;
+                case OperationType.End:
+                    EndTransaction(operation.Transaction);
+                    break;
+                default:
+                    Console.WriteLine($"Operation '{operation}' is is not supported.");
+                    Environment.Exit(1);
+                    break;
             }
         }
 
@@ -74,18 +83,11 @@ namespace DistributedDb.Transactions
                 if (transaction.IsReadOnly || site.GetReadLock(transaction, variableName))
                 {
                     var variable = site.ReadData(transaction, variableName);
+                    transaction.AddSite(site);
                     Console.WriteLine($"{transaction.ToString()} reads {variable.ToString()}");
                     return;
                 }
             }
-
-            transaction.State = TransactionState.Waiting;
-            transaction.OperationBuffer = new Operation
-            {
-                Type = OperationType.Read,
-                Transaction = transactionName,
-                Variable = variableName
-            };
         }
 
         public void WriteVariable(string transactionName, string variableName, int value)
@@ -100,6 +102,10 @@ namespace DistributedDb.Transactions
                 {
                     lockedAllSites = false;
                 }
+                else
+                {
+                    transaction.AddSite(site);
+                }
             }
 
             if (lockedAllSites)
@@ -111,15 +117,40 @@ namespace DistributedDb.Transactions
 
                 return;
             }
-            
-            transaction.State = TransactionState.Waiting;
-            transaction.OperationBuffer = new Operation
+        }
+
+        public void EndTransaction(string transactionName)
+        {
+            var transaction = GetTransaction(transactionName);
+
+            transaction.EndTime = Clock.Time;
+            if (transaction.CanCommit())
             {
-                Type = OperationType.Write,
-                Transaction = transactionName,
-                Variable = variableName,
-                WriteValue = value
-            };
+                Commit(transaction);
+            }
+            else
+            {
+                Abort(transaction);
+            }
+        }
+
+        public void Commit(Transaction transaction)
+        {
+            Console.WriteLine("Commit " + transaction.ToString());
+            foreach (var site in transaction.SitesSeen.Where(s => s.State == SiteState.Stable))
+            {
+                site.CommitValue(transaction);
+                site.ClearLocks(transaction);
+            }
+        }
+
+        public void Abort(Transaction transaction)
+        {
+            Console.WriteLine("Abort " + transaction.ToString());
+            foreach (var site in transaction.SitesSeen.Where(s => s.State == SiteState.Stable))
+            {
+                site.ClearLocks(transaction);
+            }
         }
 
         private Transaction GetTransaction(string transactionName)
