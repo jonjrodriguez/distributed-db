@@ -21,7 +21,7 @@ namespace DistributedDb.Transactions
         {
             State = TransactionState.Running;
             OperationBuffer = null;
-            WaitTime = 0;
+            WaitTime = int.MaxValue;
             SitesSeen = new Dictionary<Site, int>();
         }
 
@@ -65,6 +65,13 @@ namespace DistributedDb.Transactions
             var sitesUp = IsReadOnly || SitesSeen.All(s => s.Key.State == SiteState.Stable && s.Key.UpSince < s.Value);
 
             return allDone && sitesUp;
+        }
+
+        public void ClearBuffer()
+        {
+            State = TransactionState.Running;
+            OperationBuffer = null;
+            WaitTime = int.MaxValue;
         }
 
         public override string ToString()

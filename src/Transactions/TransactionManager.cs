@@ -23,13 +23,26 @@ namespace DistributedDb.Transactions
 
         public void Execute(IEnumerable<Operation> operations)
         {
+            RerunTransactions();
+
             foreach (var operation in operations)
             {
                 RunOperation(operation);
             }
         }
 
-        public void RunOperation(Operation operation)
+        private void RerunTransactions()
+        {
+            var transactions = Transactions.Where(t => t.OperationBuffer != null)
+                .OrderBy(t => t.WaitTime);
+
+            foreach (var transaction in transactions)
+            {
+                RunOperation(transaction.OperationBuffer, transaction);
+            }
+        }
+
+        public void RunOperation(Operation operation, Transaction transaction = null)
         {
             switch (operation.Type)
             {
@@ -38,16 +51,16 @@ namespace DistributedDb.Transactions
                     BeginTransaction(operation);
                     break;
                 case OperationType.Read:
-                    ReadVariable(operation);
+                    ReadVariable(operation, transaction);
                     break;
                 case OperationType.Write:
-                    WriteVariable(operation);
+                    WriteVariable(operation, transaction);
                     break;
                 case OperationType.End:
                     EndTransaction(operation);
                     break;
                 default:
-                    Console.WriteLine($"Operation '{operation}' is is not supported.");
+                    Console.WriteLine($"Operation '{operation}' is not supported.");
                     Environment.Exit(1);
                     break;
             }
@@ -71,9 +84,9 @@ namespace DistributedDb.Transactions
             Transactions.Add(transaction);
         }
 
-        public void ReadVariable(Operation operation)
+        public void ReadVariable(Operation operation, Transaction transaction = null)
         {
-            var transaction = GetTransaction(operation.Transaction);
+            transaction = transaction ?? GetTransaction(operation.Transaction);
             var variableName = operation.Variable;
 
             var stableSites = SiteManager.SitesWithVariable(variableName, SiteState.Stable);
@@ -91,6 +104,7 @@ namespace DistributedDb.Transactions
                     var variable = site.ReadData(transaction, variableName);
                     transaction.AddSite(site, Clock.Time);
                     Console.WriteLine($"{transaction.ToString()} reads {variable.ToString()} from {site.ToString()}");
+                    transaction.ClearBuffer();
                     return;
                 }
             }
@@ -98,9 +112,9 @@ namespace DistributedDb.Transactions
             BufferOperation(transaction, operation, TransactionState.Blocked);
         }
 
-        public void WriteVariable(Operation operation)
+        public void WriteVariable(Operation operation, Transaction transaction = null)
         {
-            var transaction = GetTransaction(operation.Transaction);
+            transaction = transaction ?? GetTransaction(operation.Transaction);
             var variableName = operation.Variable;
             var newValue = (int) operation.WriteValue;
 
@@ -127,6 +141,8 @@ namespace DistributedDb.Transactions
 
             if (lockedAllSites)
             {
+                Console.WriteLine($"{transaction.ToString()} writes {newValue} to {variableName} as {stableSites.Count()} sites.");
+                transaction.ClearBuffer();
                 foreach (var site in stableSites)
                 {
                     site.WriteData(variableName, newValue);
@@ -151,6 +167,8 @@ namespace DistributedDb.Transactions
             {
                 Abort(transaction);
             }
+
+            RerunTransactions();
         }
 
         public void Commit(Transaction transaction)
@@ -176,9 +194,12 @@ namespace DistributedDb.Transactions
 
         private void BufferOperation(Transaction transaction, Operation operation, TransactionState state)
         {
-            transaction.State = state;
-            transaction.WaitTime = Clock.Time;
-            transaction.OperationBuffer = operation;
+            if (transaction.OperationBuffer == null) 
+            {
+                transaction.State = state;
+                transaction.WaitTime = Clock.Time;
+                transaction.OperationBuffer = operation;
+            }
         }
 
         private Transaction GetTransaction(string transactionName)
