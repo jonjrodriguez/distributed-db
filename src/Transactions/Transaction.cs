@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using DistributedDb.Operations;
 using DistributedDb.Sites;
-using DistributedDb.Variables;
 
 namespace DistributedDb.Transactions
 {
@@ -65,6 +64,16 @@ namespace DistributedDb.Transactions
             var sitesUp = IsReadOnly || SitesSeen.All(s => s.Key.State == SiteState.Stable && s.Key.UpSince < s.Value);
 
             return allDone && sitesUp;
+        }
+
+        public bool Active()
+        {
+            return State == TransactionState.Running || IsWaiting();
+        }
+
+        public bool IsWaiting()
+        {
+            return State == TransactionState.Blocked || State == TransactionState.Waiting;
         }
 
         public void ClearBuffer()

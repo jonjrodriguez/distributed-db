@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DistributedDb.Deadlocks;
 using DistributedDb.Operations;
 using DistributedDb.Sites;
 
@@ -11,8 +12,9 @@ namespace DistributedDb.Transactions
         public TransactionManager(Clock clock, SiteManager manager)
         {
             Clock = clock;
-            Transactions = new List<Transaction>();
             SiteManager = manager;
+            Transactions = new List<Transaction>();
+            DeadlockManager = new DeadlockManager(manager, clock);
         }
 
         public Clock Clock { get; set; }
@@ -20,6 +22,8 @@ namespace DistributedDb.Transactions
         public IList<Transaction> Transactions { get; set; }
 
         public SiteManager SiteManager { get; set; }
+
+        public DeadlockManager DeadlockManager { get; set; }
 
         public void Execute(IEnumerable<Operation> operations)
         {
@@ -209,8 +213,14 @@ namespace DistributedDb.Transactions
                 Environment.Exit(1);
             }
 
-            if (transaction.OperationBuffer != null)
+            if (transaction.IsWaiting())
             {
+                DeadlockManager.DetectDeadlocks(Transactions);
+                RerunTransactions();
+            }
+
+            if (transaction.State != TransactionState.Running)
+            {   
                 Console.WriteLine($"Transaction {transactionName} received another operation while it is {transaction.State}.");
                 Environment.Exit(1);
             }

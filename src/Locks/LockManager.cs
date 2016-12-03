@@ -78,6 +78,13 @@ namespace DistributedDb.Locks
             return locks.Select(l => l.Variable).ToList();
         }
 
+        public IList<Lock> GetBlockingLocks(Transaction transaction, string variableName)
+        {
+            return Locks
+                .Where(l => l.Transaction != transaction && l.Variable.Name == variableName)
+                .ToList();
+        }
+
         public void ClearLocks(Transaction transaction)
         {
             Locks.RemoveAll(l => l.Transaction == transaction);

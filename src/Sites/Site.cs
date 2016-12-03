@@ -99,6 +99,13 @@ namespace DistributedDb.Sites
             LockManager.ClearLocks(transaction);
         }
 
+        public IList<Transaction> GetBlockingTransactions(Transaction transaction, string variable)
+        {
+            var locks = LockManager.GetBlockingLocks(transaction, variable);
+            
+            return locks.Select(l => l.Transaction).ToList();
+        }
+
         private Variable GetVariable(string variableName)
         {
             var variable = Data.FirstOrDefault(v => v.Name == variableName);
