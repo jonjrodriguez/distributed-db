@@ -34,19 +34,17 @@ namespace DistributedDb.Transactions
             switch (operation.Type)
             {
                 case OperationType.Begin:
-                    BeginTransaction(operation.Transaction);
-                    break;
                 case OperationType.BeginRO:
-                    BeginTransaction(operation.Transaction, true);
+                    BeginTransaction(operation);
                     break;
                 case OperationType.Read:
-                    ReadVariable(operation.Transaction, operation.Variable);
+                    ReadVariable(operation);
                     break;
                 case OperationType.Write:
-                    WriteVariable(operation.Transaction, operation.Variable, (int) operation.WriteValue);
+                    WriteVariable(operation);
                     break;
                 case OperationType.End:
-                    EndTransaction(operation.Transaction);
+                    EndTransaction(operation);
                     break;
                 default:
                     Console.WriteLine($"Operation '{operation}' is is not supported.");
@@ -55,29 +53,37 @@ namespace DistributedDb.Transactions
             }
         }
 
-        public void BeginTransaction(string transactionName, bool readOnly = false)
+        public void BeginTransaction(Operation operation)
         {
-            if (Transactions.Any(t => t.Name == transactionName))
+            if (Transactions.Any(t => t.Name == operation.Transaction))
             {
-                Console.WriteLine($"Trying to begin transaction {transactionName} when it already exists.");
+                Console.WriteLine($"Trying to begin transaction {operation.Transaction} when it already exists.");
                 Environment.Exit(1);
             }
 
             var transaction = new Transaction
             {
-                Name = transactionName,
-                IsReadOnly = readOnly,
+                Name = operation.Transaction,
+                IsReadOnly = operation.Type == OperationType.BeginRO,
                 StartTime = Clock.Time
             };
 
             Transactions.Add(transaction);
         }
 
-        public void ReadVariable(string transactionName, string variableName)
+        public void ReadVariable(Operation operation)
         {
-            var transaction = GetTransaction(transactionName);
+            var transaction = GetTransaction(operation.Transaction);
+            var variableName = operation.Variable;
 
             var stableSites = SiteManager.SitesWithVariable(variableName, SiteState.Stable);
+
+            if (stableSites.Count() == 0)
+            {
+                BufferOperation(transaction, operation, TransactionState.Waiting);
+                return;
+            }
+
             foreach (var site in stableSites)
             {
                 if (transaction.IsReadOnly || site.GetReadLock(transaction, variableName))
@@ -88,14 +94,25 @@ namespace DistributedDb.Transactions
                     return;
                 }
             }
+
+            BufferOperation(transaction, operation, TransactionState.Blocked);
         }
 
-        public void WriteVariable(string transactionName, string variableName, int value)
+        public void WriteVariable(Operation operation)
         {
-            var transaction = GetTransaction(transactionName);
+            var transaction = GetTransaction(operation.Transaction);
+            var variableName = operation.Variable;
+            var newValue = (int) operation.WriteValue;
 
             var lockedAllSites = true;
             var stableSites = SiteManager.SitesWithVariable(variableName, SiteState.Stable);
+
+            if (stableSites.Count() == 0)
+            {
+                BufferOperation(transaction, operation, TransactionState.Waiting);
+                return;
+            }
+
             foreach (var site in stableSites)
             {
                 if (!site.GetWriteLock(transaction, variableName))
@@ -112,16 +129,18 @@ namespace DistributedDb.Transactions
             {
                 foreach (var site in stableSites)
                 {
-                    site.WriteData(variableName, value);
+                    site.WriteData(variableName, newValue);
                 }
-
-                return;
+            }
+            else
+            {
+                BufferOperation(transaction, operation, TransactionState.Blocked);
             }
         }
 
-        public void EndTransaction(string transactionName)
+        public void EndTransaction(Operation operation)
         {
-            var transaction = GetTransaction(transactionName);
+            var transaction = GetTransaction(operation.Transaction);
 
             transaction.EndTime = Clock.Time;
             if (transaction.CanCommit())
@@ -137,6 +156,7 @@ namespace DistributedDb.Transactions
         public void Commit(Transaction transaction)
         {
             Console.WriteLine("Commit " + transaction.ToString());
+            transaction.State = TransactionState.Committed;
             foreach (var site in transaction.GetStableSites())
             {
                 site.CommitValue(transaction);
@@ -147,10 +167,18 @@ namespace DistributedDb.Transactions
         public void Abort(Transaction transaction)
         {
             Console.WriteLine("Abort " + transaction.ToString());
+            transaction.State = TransactionState.Aborted;
             foreach (var site in transaction.GetStableSites())
             {
                 site.ClearLocks(transaction);
             }
+        }
+
+        private void BufferOperation(Transaction transaction, Operation operation, TransactionState state)
+        {
+            transaction.State = state;
+            transaction.WaitTime = Clock.Time;
+            transaction.OperationBuffer = operation;
         }
 
         private Transaction GetTransaction(string transactionName)
