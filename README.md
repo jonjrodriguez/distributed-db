@@ -13,18 +13,17 @@
 * Validation at Commit
 * Abort Youngest in Cycle
 
-__Two ways to run:__
-
-portable: `dotnet run -p src <file>`
-
-standalone: 
-
-1. File Based: provide a path to a file
-2. Interactive: Do not include a file
+### Two ways to run:
+1. __File Based:__ provide a path to a file
+2. __Interactive:__ Do not include a file
   * Commands will be executed as they are entered
   * Type `exit` to finish
 
-__Available operations:__
+#### Commands:
+* __Portable:__ `dotnet run -p src <file>`
+* __Standalone:__ 
+
+### Available operations:
 * begin(T1): begins a transaction named T1
 * beginRO(T1): begins a read-only transaction named T1
 * R(T1, x1): transaction T1 attempts to read variable x1
@@ -36,5 +35,5 @@ __Available operations:__
 * dump(i): shows the current state of all variables at site i
 * dump(xj): shows the current state of variable xj at all sites
 
-#### Built With:
+### Built With:
 * .NET Core 1.1
