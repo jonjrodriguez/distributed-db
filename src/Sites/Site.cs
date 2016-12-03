@@ -43,6 +43,11 @@ namespace DistributedDb.Sites
                 return false;
             }
 
+            if (transaction.IsReadOnly)
+            {
+                return true;
+            }
+
             return LockManager.GetReadLock(transaction, variable);
         }
 

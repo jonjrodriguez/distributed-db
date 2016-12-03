@@ -99,7 +99,7 @@ namespace DistributedDb.Transactions
 
             foreach (var site in stableSites)
             {
-                if (transaction.IsReadOnly || site.GetReadLock(transaction, variableName))
+                if (site.GetReadLock(transaction, variableName))
                 {
                     var value = site.ReadData(transaction, variableName);
                     transaction.AddSite(site, Clock.Time);
