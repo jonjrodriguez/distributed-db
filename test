@@ -1,5 +1,6 @@
 begin(T1)
+fail(2)
+recover(2)
 w(T1, x2, 100)
-fail(1)
 end(T1)
 dump(x2)

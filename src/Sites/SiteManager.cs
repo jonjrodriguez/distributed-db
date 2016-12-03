@@ -45,6 +45,9 @@ namespace DistributedDb.Sites
                     case OperationType.Fail:
                         Fail((int) operation.Site);
                         break;
+                    case OperationType.Recover:
+                        Recover((int) operation.Site);
+                        break;
                     default:
                         Console.WriteLine(operation.ToString());
                         break;
@@ -62,7 +65,20 @@ namespace DistributedDb.Sites
                 Environment.Exit(1);
             }
 
-            site.Fail(Clock.Time);
+            site.Fail();
+        }
+
+        public void Recover(int siteId)
+        {
+            var site = Sites.FirstOrDefault(s => s.Id == siteId);
+
+            if (site == null)
+            {
+                Console.WriteLine($"Site {siteId} doesn't exist.");
+                Environment.Exit(1);
+            }
+
+            site.Recover(Clock.Time);
         }
 
         public void Dump(int? siteId, string variable)

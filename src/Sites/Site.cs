@@ -101,10 +101,16 @@ namespace DistributedDb.Sites
             return variable;
         }
         
-        public void Fail(int time)
+        public void Fail()
         {
             State = SiteState.Fail;
             LockManager = new LockManager();
+        }
+
+        public void Recover(int time)
+        {
+            UpSince = time;
+            State = SiteState.Stable;
         }
 
         public override string ToString()

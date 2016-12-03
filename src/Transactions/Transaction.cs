@@ -22,7 +22,7 @@ namespace DistributedDb.Transactions
             State = TransactionState.Running;
             OperationBuffer = null;
             WaitTime = 0;
-            SitesSeen = new List<Site>();
+            SitesSeen = new Dictionary<Site, int>();
         }
 
         public string Name { get; set; }
@@ -39,23 +39,30 @@ namespace DistributedDb.Transactions
 
         public Operation OperationBuffer { get; set; }
 
-        public IList<Site> SitesSeen { get; set; }
+        public IDictionary<Site,int> SitesSeen { get; set; }
 
-        public void AddSite(Site site)
+        public void AddSite(Site site, int time)
         {
-            if (SitesSeen.Any(s => s == site))
+            if (SitesSeen.Any(s => s.Key == site))
             {
                 return;
             }
             
-            SitesSeen.Add(site);
+            SitesSeen.Add(site, time);
+        }
+
+        public IList<Site> GetStableSites()
+        {
+            return SitesSeen.Where(s => s.Key.State == SiteState.Stable)
+                .Select(s => s.Key)
+                .ToList();
         }
 
         public bool CanCommit()
         {
             var allDone = State == TransactionState.Running && OperationBuffer == null;
 
-            var sitesUp = IsReadOnly || SitesSeen.All(s => s.State == SiteState.Stable && s.UpSince < StartTime);
+            var sitesUp = IsReadOnly || SitesSeen.All(s => s.Key.State == SiteState.Stable && s.Key.UpSince < s.Value);
 
             return allDone && sitesUp;
         }
