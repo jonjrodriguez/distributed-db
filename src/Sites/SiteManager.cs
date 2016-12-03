@@ -42,11 +42,27 @@ namespace DistributedDb.Sites
                     case OperationType.Dump:
                         Dump(operation.Site, operation.Variable);
                         break;
+                    case OperationType.Fail:
+                        Fail((int) operation.Site);
+                        break;
                     default:
                         Console.WriteLine(operation.ToString());
                         break;
                 }
             }
+        }
+
+        public void Fail(int siteId)
+        {
+            var site = Sites.FirstOrDefault(s => s.Id == siteId);
+
+            if (site == null)
+            {
+                Console.WriteLine($"Site {siteId} doesn't exist.");
+                Environment.Exit(1);
+            }
+
+            site.Fail(Clock.Time);
         }
 
         public void Dump(int? siteId, string variable)

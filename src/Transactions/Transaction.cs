@@ -55,7 +55,7 @@ namespace DistributedDb.Transactions
         {
             var allDone = State == TransactionState.Running && OperationBuffer == null;
 
-            var sitesUp = IsReadOnly || SitesSeen.All(s => s.UpSince < StartTime);
+            var sitesUp = IsReadOnly || SitesSeen.All(s => s.State == SiteState.Stable && s.UpSince < StartTime);
 
             return allDone && sitesUp;
         }
