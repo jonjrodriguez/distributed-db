@@ -205,7 +205,7 @@ namespace DistributedDb.Transactions
 
         private Transaction GetTransaction(string transactionName)
         {
-            var transaction = Transactions.FirstOrDefault(t => t.Name == transactionName);
+            var transaction = Transactions.FirstOrDefault(t => t.Name.ToLower() == transactionName.ToLower());
 
             if (transaction == null)
             {

@@ -41,12 +41,18 @@ namespace DistributedDb.Operations
 
         private string GetLine()
         {
+            string line;
             if (InputFile != null)
             {
-                return InputFile.ReadLine();
+                line = InputFile.ReadLine();
+                while (line != null && line.StartsWith("//"))
+                {
+                    line = InputFile.ReadLine();
+                }
+
+                return line;
             } 
             
-            string line;
             line = Console.ReadLine();
 
             return line != "exit" ? line : null;
