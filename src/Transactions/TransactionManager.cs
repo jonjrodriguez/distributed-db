@@ -137,6 +137,10 @@ namespace DistributedDb.Transactions
                 {
                     lockedAllSites = false;
                 }
+                else
+                {
+                    transaction.AddSite(site, Clock.Time);
+                }
             }
 
             if (lockedAllSites)
@@ -146,7 +150,6 @@ namespace DistributedDb.Transactions
                 foreach (var site in stableSites)
                 {
                     site.WriteData(variableName, newValue);
-                    transaction.AddSite(site, Clock.Time);
                 }
             }
             else
