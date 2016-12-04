@@ -1,9 +1,18 @@
 begin(T1)
 begin(T2)
-R(T1, x1)
-R(T2, x2)
-W(T1, x2, 12)
-end(T2) 
-end(T1) 
-beginRO(T3) 
-R(T3, x2) 
+beginRO(T3)
+R(T1,x1)
+R(T2,x1)
+R(T2,x2)
+W(T1,x2,12)
+end(T2)
+end(T1)
+R(T3,x2)
+end(T3)
+dump(x2)
+
+// T1 should commit, but waits on T2: reads x1=10 from site 2
+// T2 should commit: reads x1=10 from site 2 and x2=20 from site 1
+// T3 should commit: reads x2=20 from site 1
+// Final values: x2=12 at all sites
+// All others are their default values

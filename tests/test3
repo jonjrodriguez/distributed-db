@@ -1,8 +1,15 @@
 begin(T1)
 begin(T2)
 begin(T3)
-R(T2, x1)
-W(T1, x1, 12)
-end(T2); R(T3, x1)
+R(T2,x1)
+W(T1,x1,12)
+end(T2); R(T3,x1)
 end(T1)
 end(T3)
+dump(2)
+
+// T1 should commit, waits on T2
+// T2 should commit: reads x1=10 from site 2
+// T3 should commit, waits on T1: reads x1=12
+// Final variables: x1=12
+// All others are their default values

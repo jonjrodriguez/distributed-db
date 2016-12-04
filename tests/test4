@@ -1,12 +1,20 @@
-// T2 should abort as we are being conservative
-Begin(T1)
-Begin(T2)
+begin(T1)
+begin(T2)
 begin(T3)
 r(T1,x2)
 w(T2,x2,100)
-Fail(2)
-End(T1)
-Fail(1)
+fail(1); fail(2)
+end(T1)
 recover(2)
-w(T3,x2, 300)
-End(T2)
+r(T3,x2)
+end(T2)
+w(T3,x2,300)
+recover(1)
+end(T3)
+dump(x2)
+
+// T1 should abort: reads x2=20 from site 1
+// T2 should abort as we're being conservative (site 2 fails after T2 acquired a lock)
+// T3 should commit but waits on T2: reads x2=20 from site 3
+// Final values: x2=300 at sites 2-10
+// All others are their default values

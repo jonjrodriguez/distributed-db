@@ -1,0 +1,19 @@
+begin(T1)
+begin(T2)
+begin(T3)
+W(T1,x4,4)
+W(T1,x6,6)
+fail(2)
+W(T2,x4,44)
+W(T3,x6,66)
+recover(2)
+W(T1,x4,5)
+end(T1)
+W(T3,x4,55)
+end(T3)
+dump()
+
+// T1 should abort (site 2 fails after initial access - even with reaccess after recovery)
+// T2 should get killed by deadlock detection (T1 <=> T2)
+// T3 should commit, waits on T1 for all operations
+// Final values: x6 = 66 at all sites, x4 = 55

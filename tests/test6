@@ -1,0 +1,21 @@
+begin(T1)
+begin(T2)
+beginRO(T3)
+w(T1,x2,200)
+r(T3,x2); r(T1,x2)
+w(T1,x1,100)
+end(T1)
+beginRO(T4)
+fail(2); recover(2);
+r(T2,x1);
+r(T3,x1)
+w(T2,x2,300);
+fail(1); recover(1);
+r(T4,x2)
+end(T3); end(T4)
+end(T2)
+
+// T1 should commit: reads x2=200 from site 1 (itself)
+// T2 should abort: reads x1=100 from site 2 (wrote to site 1 but it failed and recovered before commit)
+// T3 should commit reads x2=20 from site 1 and x1=10 from site 2 
+// T4 should commit: reads x2=200 from site 3
