@@ -16,7 +16,7 @@ namespace DistributedDb
 
         public override string ToString()
         {
-            return $"Time: {Time}";
+            return $"Time {Time}:";
         }
     }
 }

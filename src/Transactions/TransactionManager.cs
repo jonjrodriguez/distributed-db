@@ -64,8 +64,7 @@ namespace DistributedDb.Transactions
                     EndTransaction(operation);
                     break;
                 default:
-                    Console.WriteLine($"Operation '{operation}' is not supported.");
-                    Environment.Exit(1);
+                    Logger.Fail($"Operation '{operation}' is not supported.");
                     break;
             }
         }
@@ -74,8 +73,7 @@ namespace DistributedDb.Transactions
         {
             if (Transactions.Any(t => t.Name == operation.Transaction))
             {
-                Console.WriteLine($"Trying to begin transaction {operation.Transaction} when it already exists.");
-                Environment.Exit(1);
+                Logger.Fail($"Trying to begin transaction {operation.Transaction} when it already exists.");
             }
 
             var transaction = new Transaction
@@ -107,7 +105,7 @@ namespace DistributedDb.Transactions
                 {
                     var value = site.ReadData(transaction, variableName);
                     transaction.AddSite(site, Clock.Time);
-                    Console.WriteLine($"{transaction.ToString()} reads {variableName}={value} from {site.ToString()}");
+                    Logger.Write($"{Clock.ToString()} Transaction {transaction.ToString()} reads {variableName}={value} from {site.ToString()}.");
                     transaction.ClearBuffer();
                     return;
                 }
@@ -145,7 +143,6 @@ namespace DistributedDb.Transactions
 
             if (lockedAllSites)
             {
-                Console.WriteLine($"{transaction.ToString()} writes {variableName}={newValue} at {stableSites.Count()} sites");
                 transaction.ClearBuffer();
                 foreach (var site in stableSites)
                 {
@@ -177,7 +174,7 @@ namespace DistributedDb.Transactions
 
         public void Commit(Transaction transaction)
         {
-            Console.WriteLine($"Commit {transaction.ToString()}. Why?");
+            Logger.Write($"{Clock.ToString()} Transaction {transaction.ToString()} committed.");
             transaction.State = TransactionState.Committed;
             foreach (var site in transaction.GetStableSites())
             {
@@ -188,7 +185,7 @@ namespace DistributedDb.Transactions
 
         public void Abort(Transaction transaction)
         {
-            Console.WriteLine($"Abort {transaction.ToString()}. Why?");
+            Logger.Write($"{Clock.ToString()} Transaction {transaction.ToString()} aborted.");
             transaction.State = TransactionState.Aborted;
             foreach (var site in transaction.GetStableSites())
             {
@@ -212,8 +209,7 @@ namespace DistributedDb.Transactions
 
             if (transaction == null)
             {
-                Console.WriteLine($"Trying to read as transaction {transactionName}, but it doesn't exist.");
-                Environment.Exit(1);
+                Logger.Fail($"Trying to read as transaction {transactionName}, but it doesn't exist.");
             }
 
             if (transaction.IsWaiting())
@@ -224,8 +220,7 @@ namespace DistributedDb.Transactions
 
             if (transaction.State != TransactionState.Running)
             {   
-                Console.WriteLine($"Transaction {transactionName} received another operation while it is {transaction.State}.");
-                Environment.Exit(1);
+                Logger.Fail($"Transaction {transactionName} received another operation while it is {transaction.State}.");
             }
 
             return transaction;

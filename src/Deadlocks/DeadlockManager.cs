@@ -92,7 +92,7 @@ namespace DistributedDb.Deadlocks
             var youngest = cycle.OrderByDescending(t => t.StartTime).First();
             
             youngest.EndTime = Clock.Time;
-            Console.WriteLine($"Abort {youngest.ToString()} due to deadlock");
+            Logger.Write($"{Clock.ToString()} Transaction {youngest.ToString()} killed.");
             youngest.State = TransactionState.Aborted;
             foreach (var site in youngest.GetStableSites())
             {

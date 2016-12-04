@@ -17,16 +17,15 @@ namespace DistributedDb.Operations
                 }
                 else 
                 {
-                    Console.WriteLine($"File not found: {args[0]}");
-                    Environment.Exit(1);
+                    Logger.Fail($"File not found: {args[0]}");
                 }
             }
 
             if (InputFile == null)
             {
-                Console.WriteLine("Reading from standard input");
-                Console.WriteLine("(type exit to quit)");
-                Console.WriteLine();
+                Logger.Write("Reading from standard input");
+                Logger.Write("(type exit to quit)");
+                Logger.Write();
             }
         }
 
@@ -41,19 +40,12 @@ namespace DistributedDb.Operations
 
         private string GetLine()
         {
-            string line;
-            if (InputFile != null)
-            {
-                line = InputFile.ReadLine();
-                while (line != null && line.StartsWith("//"))
-                {
-                    line = InputFile.ReadLine();
-                }
+            var line = InputFile != null ? InputFile.ReadLine() : Console.ReadLine();
 
-                return line;
-            } 
-            
-            line = Console.ReadLine();
+            while (line != null && line.StartsWith("//"))
+            {
+                line = GetLine();
+            }
 
             return line != "exit" ? line : null;
         }
@@ -109,8 +101,7 @@ namespace DistributedDb.Operations
             }
             catch (System.FormatException e)
             {
-                Console.WriteLine($"Operation '{operation}' is invalid. {e.Message}");
-                Environment.Exit(1);
+                Logger.Fail($"Operation '{operation}' is invalid. {e.Message}");
                 return null;
             }
         }
@@ -124,8 +115,10 @@ namespace DistributedDb.Operations
                 case "beginro":
                     return OperationType.BeginRO;
                 case "r":
+                case "read":
                     return OperationType.Read;
                 case "w":
+                case "write":
                     return OperationType.Write;
                 case "dump":
                     return OperationType.Dump;

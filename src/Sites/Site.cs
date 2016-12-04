@@ -112,8 +112,7 @@ namespace DistributedDb.Sites
 
             if (variable == null)
             {
-                Console.WriteLine($"Variable {variableName} doesn't exist at {ToString()}.");
-                Environment.Exit(1);
+                Logger.Fail($"Variable {variableName} doesn't exist at {ToString()}.");
             }
 
             return variable;
@@ -145,7 +144,7 @@ namespace DistributedDb.Sites
         {
             var data = string.IsNullOrWhiteSpace(variableName) ? Data : Data.Where(d => d.Name == variableName);
             
-            var result = $"{ToString()}: ({State})\n";
+            var result = $"\t{ToString()} ({State}): ";
             foreach (var variable in data)
             {
                 result += variable.ToString() + " ";

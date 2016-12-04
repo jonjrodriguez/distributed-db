@@ -49,7 +49,7 @@ namespace DistributedDb.Sites
                         Recover((int) operation.Site);
                         break;
                     default:
-                        Console.WriteLine(operation.ToString());
+                        Logger.Fail($"Operation '{operation}' is not supported.");
                         break;
                 }
             }
@@ -57,12 +57,13 @@ namespace DistributedDb.Sites
 
         public void Fail(int siteId)
         {
-            var site = Sites.FirstOrDefault(s => s.Id == siteId);
+            var site = Sites
+                .Where(s => s.State == SiteState.Stable)
+                .FirstOrDefault(s => s.Id == siteId);
 
             if (site == null)
             {
-                Console.WriteLine($"Site {siteId} doesn't exist.");
-                Environment.Exit(1);
+                Logger.Fail($"Site {siteId} has already failed.");
             }
 
             site.Fail();
@@ -70,12 +71,13 @@ namespace DistributedDb.Sites
 
         public void Recover(int siteId)
         {
-            var site = Sites.FirstOrDefault(s => s.Id == siteId);
+            var site = Sites
+                .Where(s => s.State == SiteState.Fail)
+                .FirstOrDefault(s => s.Id == siteId);
 
             if (site == null)
             {
-                Console.WriteLine($"Site {siteId} doesn't exist.");
-                Environment.Exit(1);
+                Logger.Fail($"Site {siteId} is not in a failed state.");
             }
 
             site.Recover(Clock.Time);
@@ -86,9 +88,11 @@ namespace DistributedDb.Sites
             var sites = siteId == null ? Sites : Sites.Where(s => s.Id == siteId);
             sites = string.IsNullOrWhiteSpace(variable) ? sites : SitesWithVariable(variable);
 
+            var dumping = siteId != null ? siteId.ToString() : variable;
+            Logger.Write($"{Clock.ToString()} Dump({dumping}):");
             foreach (var site in sites)
             {
-                Console.WriteLine(site.Dump(variable));
+                Logger.Write(site.Dump(variable));
             }
         }
 
