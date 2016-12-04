@@ -28,7 +28,7 @@ namespace DistributedDb.Transactions
         public void Execute(IEnumerable<Operation> operations)
         {
             RerunTransactions();
-
+            
             foreach (var operation in operations)
             {
                 RunOperation(operation);
@@ -37,7 +37,7 @@ namespace DistributedDb.Transactions
 
         private void RerunTransactions()
         {
-            var transactions = Transactions.Where(t => t.OperationBuffer != null)
+            var transactions = Transactions.Where(t => t.IsWaiting())
                 .OrderBy(t => t.WaitTime);
 
             foreach (var transaction in transactions)
@@ -174,7 +174,7 @@ namespace DistributedDb.Transactions
 
         public void Commit(Transaction transaction)
         {
-            Console.WriteLine("Commit " + transaction.ToString());
+            Console.WriteLine($"Commit {transaction.ToString()}. Why?");
             transaction.State = TransactionState.Committed;
             foreach (var site in transaction.GetStableSites())
             {
@@ -185,7 +185,7 @@ namespace DistributedDb.Transactions
 
         public void Abort(Transaction transaction)
         {
-            Console.WriteLine("Abort " + transaction.ToString());
+            Console.WriteLine($"Abort {transaction.ToString()}. Why?");
             transaction.State = TransactionState.Aborted;
             foreach (var site in transaction.GetStableSites())
             {
