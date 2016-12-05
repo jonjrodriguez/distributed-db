@@ -1,6 +1,6 @@
 beginRO(T1)
 begin(T2)
-r(T1, x1)
+r(T1,x1)
 w(T2,x2,100)
 fail(2)
 end(T1)

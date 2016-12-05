@@ -8,33 +8,33 @@ r(T1,x3); r(T2,x5); r(T3,x3)
 end(T2)
 end(T1)
 
-// T1 should commit; waits on T2
-// T2 should commit
+// T1 should commit; waits on T2: reads x3=2
+// T2 should commit: reads x5=50
 // T3 should be killed
 // (T1 => T2 <=> T3)
 
 begin(T4)
 begin(T5)
 begin(T6)
-w(T4,x1,1); w(T5,x3,2); w(T6,x5,3)
-r(T4,x5); r(T5,x1); r(T6,x3)
+w(T4,x7,4); w(T5,x9,5); w(T6,x11,6)
+r(T4,x11); r(T5,x7); r(T6,x9)
 end(T4)
 end(T5)
 
-// T4 should commit
-// T5 should commit
+// T4 should commit: reads x11=110
+// T5 should commit, but waits for T4: reads x7=4
 // T6 should be killed
 // (T4 => T6 => T5 => T4)
 
 begin(T7)
 begin(T8)
 begin(T9)
-w(T7,x1,1); w(T8,x3,2); w(T9,x5,3)
-r(T7,x3); r(T8,x1); r(T9,x3)
+w(T7,x13,7); w(T8,x15,8); w(T9,x17,9)
+r(T7,x15); r(T8,x13); r(T9,x15)
 end(T9)
 end(T7)
 
-// T7 should commit
+// T7 should commit: reads x15=150
 // T8 should be killed
-// T9 should commit
+// T9 should commit: reads x15=150
 // (T7 <=> T8 <= T9)

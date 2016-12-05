@@ -11,7 +11,7 @@ dump()
 
 // T1 should commit
 // T2 should commit, but wait for T1 to write x1
-// T3 should commit, 
-// T4 should be killed by deadlock detection (T3 <-> T4)
+// T3 should commit
+// T4 should be killed by deadlock detection (T3 <=> T4)
 // Final values: x1=17, x2=32 at all sites, x4=23 at all sites, x5=21
 // All others are their default values
