@@ -1,5 +1,8 @@
 namespace DistributedDb
 {
+    /// <summary>
+    /// Manages global time across application
+    /// </summary>
     public class Clock
     {
         public Clock()
@@ -9,6 +12,9 @@ namespace DistributedDb
 
         public int Time { get; set; }
 
+        /// <summary>
+        /// Increments global time
+        /// </summary>
         public void Tick()
         {
             Time++;

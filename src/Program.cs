@@ -8,6 +8,12 @@ namespace DistributedDb
 {
     public class Program
     {
+        /// <summary>
+        /// Entry point to application
+        /// Parses the input file or standard input
+        /// Instantiates the TransactionManager and SiteManager and passes the correct operations to each
+        /// </summary>
+        /// <param name="args">Command line arguments - filename or blank</param>
         public static void Main(string[] args)
         {
             Logger.Success("Program beginning.\n");

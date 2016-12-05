@@ -4,6 +4,10 @@ using DistributedDb.Transactions;
 
 namespace DistributedDb.Deadlocks
 {
+    /// <summary>
+    /// Representation of a graph Node
+    /// Each node has a vertex and a list of it's neighbors
+    /// </summary>
     public class Node
     {
         public Node(Transaction vertex)
@@ -17,6 +21,10 @@ namespace DistributedDb.Deadlocks
 
         public List<Transaction> Neighbors { get; set; }
 
+        /// <summary>
+        /// Returns whether this node is connection to the given Transaction
+        /// </summary>
+        /// <param name="neighbor"></param>
         public bool Contains(Transaction neighbor)
         {
             return Neighbors.Any(n => n == neighbor);

@@ -9,6 +9,11 @@ namespace DistributedDb.Locks
         Write    
     }
 
+    /// <summary>
+    /// Representation of a lock
+    /// Can be a read or write lock
+    /// Each lock has a transaction and variable
+    /// </summary>
     public class Lock
     {
         public LockType Type { get; set; }

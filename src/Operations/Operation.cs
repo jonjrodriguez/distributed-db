@@ -12,6 +12,9 @@ namespace DistributedDb.Operations
         Recover
     }
 
+    /// <summary>
+    /// Representation of the possible operations
+    /// </summary>
     public class Operation
     {
         public static readonly OperationType[] SiteOperations =

@@ -7,6 +7,11 @@ namespace DistributedDb.Operations
 {
     public class InputParser
     {
+        /// <summary>
+        /// Parses the input
+        /// Can read from a file or from the standard input
+        /// </summary>
+        /// <param name="args"></param>
         public InputParser(string[] args)
         {
             if (args.Length > 0) 
@@ -31,6 +36,11 @@ namespace DistributedDb.Operations
 
         public StreamReader InputFile { get; set; }
 
+        /// <summary>
+        /// Gets the next line of instructions
+        /// Parses each instruction into an operation
+        /// </summary>
+        /// <returns>List of operations to be executed</returns>
         public List<Operation> GetInstruction()
         {
             var line = GetLine();
@@ -38,6 +48,9 @@ namespace DistributedDb.Operations
             return line != null ? ParseLine(line) : null;
         }
 
+        /// <summary>
+        /// Gets the next line of the input
+        /// </summary>
         private string GetLine()
         {
             var line = InputFile != null ? InputFile.ReadLine() : Console.ReadLine();
@@ -50,6 +63,10 @@ namespace DistributedDb.Operations
             return line != "exit" ? line : null;
         }
 
+        /// <summary>
+        /// Parses a string into a list of operations
+        /// </summary>
+        /// <param name="line"></param>
         private List<Operation> ParseLine(string line)
         {
             var operations = line.Split(';')
@@ -64,6 +81,10 @@ namespace DistributedDb.Operations
             return parsedOperations;
         }
 
+        /// <summary>
+        /// Parses a single operation string into an actual operation 
+        /// </summary>
+        /// <param name="operation"></param>
         private Operation ParseOperation(string operation)
         {
             var parts = operation.Trim()
