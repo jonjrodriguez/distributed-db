@@ -17,16 +17,16 @@ namespace DistributedDb.Transactions
         {
             Clock = clock;
             SiteManager = manager;
-            Transactions = new List<Transaction>();
+            Transactions = new Dictionary<Transaction, Dictionary<Site, int>>();
             DeadlockManager = new DeadlockManager(manager, clock);
         }
 
         public Clock Clock { get; set; }
 
         /// <summary>
-        /// All existing transactions
+        /// All existing transactions with any Sites it has visited and the time visited
         /// </summary>
-        public IList<Transaction> Transactions { get; set; }
+        public Dictionary<Transaction, Dictionary<Site, int>> Transactions { get; set; }
 
         /// <summary>
         /// Holds a list of all sites
@@ -58,7 +58,8 @@ namespace DistributedDb.Transactions
         /// </summary>
         private void RerunTransactions()
         {
-            var transactions = Transactions.Where(t => t.IsWaiting())
+            var transactions = Transactions.Keys
+                .Where(t => t.IsWaiting())
                 .OrderBy(t => t.WaitTime);
 
             foreach (var transaction in transactions)
@@ -88,7 +89,7 @@ namespace DistributedDb.Transactions
                     WriteVariable(operation, transaction);
                     break;
                 case OperationType.End:
-                    EndTransaction(operation);
+                    EndTransaction(operation, transaction);
                     break;
                 default:
                     Logger.Fail($"Operation '{operation}' is not supported.");
@@ -103,7 +104,7 @@ namespace DistributedDb.Transactions
         /// <param name="operation"></param>
         public void BeginTransaction(Operation operation)
         {
-            if (Transactions.Any(t => t.Name == operation.Transaction))
+            if (Transactions.Keys.Any(t => t.Name == operation.Transaction))
             {
                 Logger.Fail($"Trying to begin transaction {operation.Transaction} when it already exists.");
             }
@@ -115,7 +116,7 @@ namespace DistributedDb.Transactions
                 StartTime = Clock.Time
             };
 
-            Transactions.Add(transaction);
+            Transactions.Add(transaction, new Dictionary<Site, int>());
         }
 
         /// <summary>
@@ -145,7 +146,7 @@ namespace DistributedDb.Transactions
                 if (site.GetReadLock(transaction, variableName))
                 {
                     var value = site.ReadData(transaction, variableName);
-                    transaction.AddSite(site, Clock.Time);
+                    AddSiteToTransaction(transaction, site);
                     Logger.Write($"{Clock.ToString()} Transaction {transaction.ToString()} reads {variableName}={value} from {site.ToString()}.");
                     transaction.ClearBuffer();
                     return;
@@ -187,7 +188,7 @@ namespace DistributedDb.Transactions
                 }
                 else
                 {
-                    transaction.AddSite(site, Clock.Time);
+                    AddSiteToTransaction(transaction, site);
                 }
             }
 
@@ -208,16 +209,26 @@ namespace DistributedDb.Transactions
         /// <summary>
         /// Handles the end operation
         /// Either commits or aborts the transaction
+        /// If a site where a read-only transaction read from is down, it buffers the commit
         /// Sets the end time of the transaction
         /// Reruns any waiting operations
         /// </summary>
         /// <param name="operation"></param>
-        public void EndTransaction(Operation operation)
+        /// <param name="transaction"></param>
+        public void EndTransaction(Operation operation, Transaction transaction = null)
         {
-            var transaction = GetTransaction(operation.Transaction);
+            transaction = transaction ?? GetTransaction(operation.Transaction);
 
+            if (transaction.IsReadOnly && Transactions[transaction].Keys.Any(s => s.State != SiteState.Stable))
+            {
+                BufferOperation(transaction, operation, TransactionState.Waiting);
+                return;
+            }
+            
+            transaction.ClearBuffer();
             transaction.EndTime = Clock.Time;
-            if (transaction.CanCommit())
+
+            if (CanCommit(transaction))
             {
                 Commit(transaction);
             }
@@ -230,6 +241,18 @@ namespace DistributedDb.Transactions
         }
 
         /// <summary>
+        /// Determines whether this transaction can commit
+        /// If transaction is read-only, it can commit
+        /// If all sites the transaction has visited have been up since the transaction first visited, it can commit
+        /// </summary>
+        public bool CanCommit(Transaction transaction)
+        {
+            var sitesUpSinceAccess = Transactions[transaction].All(s => s.Key.State == SiteState.Stable && s.Key.UpSince <= s.Value);
+            
+            return transaction.IsReadOnly || sitesUpSinceAccess; 
+        }
+
+        /// <summary>
         /// Commits the transaction
         /// Marks it as committed and clears all locks at available sites
         /// </summary>
@@ -238,7 +261,7 @@ namespace DistributedDb.Transactions
         {
             Logger.Write($"{Clock.ToString()} Transaction {transaction.ToString()} committed.");
             transaction.State = TransactionState.Committed;
-            foreach (var site in transaction.GetStableSites())
+            foreach (var site in GetStableSites(transaction))
             {
                 site.CommitValue(transaction);
                 site.ClearLocks(transaction);
@@ -254,7 +277,7 @@ namespace DistributedDb.Transactions
         {
             Logger.Write($"{Clock.ToString()} Transaction {transaction.ToString()} aborted.");
             transaction.State = TransactionState.Aborted;
-            foreach (var site in transaction.GetStableSites())
+            foreach (var site in GetStableSites(transaction))
             {
                 site.ClearLocks(transaction);
             }
@@ -285,7 +308,7 @@ namespace DistributedDb.Transactions
         /// <returns></returns>
         private Transaction GetTransaction(string transactionName)
         {
-            var transaction = Transactions.FirstOrDefault(t => t.Name.ToLower() == transactionName.ToLower());
+            var transaction =  Transactions.Keys.FirstOrDefault(t => t.Name.ToLower() == transactionName.ToLower());
 
             if (transaction == null)
             {
@@ -294,7 +317,7 @@ namespace DistributedDb.Transactions
 
             if (transaction.IsWaiting())
             {
-                DeadlockManager.DetectDeadlocks(Transactions);
+                DeadlockManager.DetectDeadlocks(Transactions.Keys);
                 RerunTransactions();
             }
 
@@ -304,6 +327,33 @@ namespace DistributedDb.Transactions
             }
 
             return transaction;
+        }
+
+        /// <summary>
+        /// Adds a site to the list of sites this transaction has visited along with the time
+        /// Will add the site on the first visit only
+        /// </summary>
+        /// <param name="transaction"></param>
+        /// <param name="site"></param>
+        private void AddSiteToTransaction(Transaction transaction, Site site)
+        {
+            if (Transactions[transaction].ContainsKey(site))
+            {
+                return;
+            }
+            
+            Transactions[transaction].Add(site, Clock.Time);
+        }
+
+        /// <summary>
+        /// Gets the list of sites this transaction has visited which are currently available
+        /// </summary>
+        /// <returns>List of all stable (up) sites</returns>
+        private IList<Site> GetStableSites(Transaction transaction)
+        {
+            return Transactions[transaction].Keys
+                .Where(s => s.State == SiteState.Stable)
+                .ToList();
         }
     }
 }

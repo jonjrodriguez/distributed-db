@@ -1,0 +1,11 @@
+beginRO(T1)
+begin(T2)
+r(T1, x1)
+w(T2,x2,100)
+fail(2)
+end(T1)
+end(T2)
+recover(2)
+
+// T1 should commit, but waits on Site 2 should recover
+// T2 should abort, doesn't need to wait on Site 2 to recover

@@ -1,7 +1,4 @@
-using System.Collections.Generic;
-using System.Linq;
 using DistributedDb.Operations;
-using DistributedDb.Sites;
 
 namespace DistributedDb.Transactions
 {
@@ -21,7 +18,6 @@ namespace DistributedDb.Transactions
             State = TransactionState.Running;
             OperationBuffer = null;
             WaitTime = int.MaxValue;
-            SitesSeen = new Dictionary<Site, int>();
         }
 
         public string Name { get; set; }
@@ -58,53 +54,6 @@ namespace DistributedDb.Transactions
         /// Since there can only be one waiting operation, it is a single item
         /// </summary>
         public Operation OperationBuffer { get; set; }
-
-        /// <summary>
-        /// List of sites this transaction has had any action with
-        /// Includes locks, read, and writes
-        /// </summary>
-        public IDictionary<Site,int> SitesSeen { get; set; }
-
-        /// <summary>
-        /// Adds a site to the list of sites this transaction has visited along with the time
-        /// Will add the site on the first visit only
-        /// </summary>
-        /// <param name="site">The site visited</param>
-        /// <param name="time">The time of the visit</param>
-        public void AddSite(Site site, int time)
-        {
-            if (SitesSeen.Any(s => s.Key == site))
-            {
-                return;
-            }
-            
-            SitesSeen.Add(site, time);
-        }
-
-        /// <summary>
-        /// Gets the list of sites this transaction has visited which are currently available
-        /// </summary>
-        /// <returns>List of all stable (up) sites</returns>
-        public IList<Site> GetStableSites()
-        {
-            return SitesSeen.Where(s => s.Key.State == SiteState.Stable)
-                .Select(s => s.Key)
-                .ToList();
-        }
-
-        /// <summary>
-        /// Determines whether this transaction can commit
-        /// Makes sure there are no operations waiting in the buffer
-        /// Checks if transaction is readonly or all available sites the transaction has visited has been up since the transaction first visited
-        /// </summary>
-        public bool CanCommit()
-        {
-            var allDone = State == TransactionState.Running && OperationBuffer == null;
-
-            var sitesUp = IsReadOnly || SitesSeen.All(s => s.Key.State == SiteState.Stable && s.Key.UpSince <= s.Value);
-
-            return allDone && sitesUp;
-        }
 
         /// <summary>
         /// Whether a transaction is still Active

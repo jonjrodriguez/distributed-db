@@ -127,21 +127,28 @@ namespace DistributedDb.Sites
         }
 
         /// <summary>
+        /// Utility function to get all sites
+        /// </summary>
+        /// <param name="state">Optional state to filter the sites</param>
+        /// <returns>List of sites filtered by state</returns>
+        public IList<Site> GetSites(SiteState? state = null)
+        {
+            return state == null ? Sites : Sites.Where(s => s.State == state).ToList();
+        }
+
+        /// <summary>
         /// Utility function to find sites where a variable is stored
         /// </summary>
         /// <param name="variable"></param>
         /// <param name="state">Optional state to limit the sites to</param>
-        /// <returns></returns>
+        /// <returns>List of sites filtered by variable and optionally state</returns>
         public List<Site> SitesWithVariable(string variable, SiteState? state = null)
         {
-            var sites = Sites.Where(s => s.Data.Any(d => d.Name == variable));
-
-            if (state != null)
-            {
-                sites = sites.Where(s => s.State == state);
-            }
-
-            return sites.ToList();
+            var sites = GetSites(state);
+            
+            return sites
+                .Where(s => s.Data.Any(d => d.Name == variable))
+                .ToList();
         }
     }
 }

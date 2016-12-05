@@ -24,7 +24,7 @@ namespace DistributedDb.Deadlocks
         /// Construct a blocking/waits-for graph for all active transactions
         /// While there are cycles, it kills the youngest transaction
         /// </summary>
-        public void DetectDeadlocks(IList<Transaction> transactions)
+        public void DetectDeadlocks(IEnumerable<Transaction> transactions)
         {            
             var blockingGraph = ConstructGraph(transactions.Where(t => t.Active()));
 
@@ -122,7 +122,7 @@ namespace DistributedDb.Deadlocks
             youngest.EndTime = Clock.Time;
             Logger.Write($"{Clock.ToString()} Transaction {youngest.ToString()} aborted (deadlock).");
             youngest.State = TransactionState.Aborted;
-            foreach (var site in youngest.GetStableSites())
+            foreach (var site in SiteManager.GetSites(SiteState.Stable))
             {
                 site.ClearLocks(youngest);
             }
