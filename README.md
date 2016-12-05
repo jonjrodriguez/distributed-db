@@ -20,12 +20,8 @@
   * Type `exit` to finish
 
 #### Commands:
-* __Portable:__ if .Net 1.1 is installed
-  * `dotnet run -p src <file>`
-* __Standalone:__
-  * Windows: 
-  * Mac: 
-  * Linux: 
+* Needs .Net Core 1.1 is installed
+  * `dotnet portable/src.dll <file>`
 
 ### Available operations:
 * begin(T1) - begins a transaction named T1
