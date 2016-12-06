@@ -24,6 +24,7 @@
   * `dotnet portable/src.dll <file>`
 * Standalone:
   * Mac OSX: `./standalone/osx/src <file>`
+  * Ubuntu 16.04: `./standalone/ubuntu/src <file>`
 
 ### Available operations:
 * begin(T1) - begins a transaction named T1
@@ -40,4 +41,4 @@
 * ; - separator for concurrent events
 
 ### Built With:
-* .NET Core 1.1
+* [.NET Core 1.1](https://www.microsoft.com/net/core)
