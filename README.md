@@ -23,7 +23,7 @@
 * Needs .Net Core 1.1 is installed
   * `dotnet portable/src.dll <file>`
 * Standalone:
-  * Mac OSX: `./standalone/src <file>`
+  * Mac OSX: `./standalone/osx/src <file>`
 
 ### Available operations:
 * begin(T1) - begins a transaction named T1
